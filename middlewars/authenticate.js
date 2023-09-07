@@ -11,13 +11,13 @@ const authenticate = async (req, res, next) => {
   const [bearer, token] = authorization.split(" ");
 
   if (bearer !== "Bearer") {
-    throw HttpError(401);
+    throw HttpError(403, `Access denied!`);
   }
   try {
     const { id } = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(id);
     if (!user || !user.token) {
-      throw HttpError(401);
+      throw HttpError(403, `Access denied!`);
     }
     req.user = user;
     next();

@@ -1,6 +1,6 @@
 import Contact from "../models/contact.js";
 import { ctrlWrapper } from "../decorators/index.js";
-import { checkContactAndAccess } from "../utils/index.js";
+import { HttpError } from "../helpers/index.js";
 
 const getAll = async (req, res) => {
   const { _id: owner } = req.user;
@@ -23,10 +23,11 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   const { id } = req.params;
-  const currentUserId = req.user._id;
   const contact = await Contact.findById(id);
 
-  checkContactAndAccess(contact, currentUserId);
+  if (!contact) {
+    throw HttpError(404, `Contact with id=${id} not found!`);
+  }
 
   res.json(contact);
 };
@@ -39,10 +40,11 @@ const add = async (req, res) => {
 
 const updateById = async (req, res) => {
   const { id } = req.params;
-  const currentUserId = req.user._id;
   const contact = await Contact.findById(id);
 
-  checkContactAndAccess(contact, currentUserId);
+  if (!contact) {
+    throw HttpError(404, `Contact with id=${id} not found!`);
+  }
 
   const result = await Contact.findByIdAndUpdate(id, req.body, { new: true });
   res.json(result);
@@ -50,23 +52,31 @@ const updateById = async (req, res) => {
 
 const updateFavorite = async (req, res) => {
   const { id } = req.params;
-  const currentUserId = req.user._id;
-  const contact = await Contact.findById(id);
 
-  checkContactAndAccess(contact, currentUserId);
+  const updatedContact = await Contact.findByIdAndUpdate(
+    id,
+    { $set: { favorite: true, ...req.body } },
+    { new: true }
+  );
 
-  const result = await Contact.findByIdAndUpdate(id, req.body, { new: true });
-  res.json(result);
+  if (!updatedContact) {
+    throw HttpError(404, `Contact with id=${id} not found!`);
+  }
+  res.json(updatedContact);
 };
 
 const deleteById = async (req, res) => {
   const { id } = req.params;
   const currentUserId = req.user._id;
-  const contact = await Contact.findById(id);
 
-  checkContactAndAccess(contact, currentUserId);
+  const result = await Contact.findByIdAndDelete({
+    _id: id,
+    owner: currentUserId,
+  });
 
-  await contact.deleteOne();
+  if (!result) {
+    throw HttpError(404, `Contact with id=${id} not found!`);
+  }
 
   res.json({
     message: "Delete success",

@@ -10,7 +10,6 @@ import contactsSchema from "../../schemas/contacts-schemas.js";
 
 const contactsRouter = express.Router();
 
-// auth cheking token for contactsRouter
 contactsRouter.use(authenticate);
 
 contactsRouter.get("/", contactsController.getAll);
